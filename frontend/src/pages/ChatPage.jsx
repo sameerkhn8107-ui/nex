@@ -46,7 +46,10 @@ export default function ChatPage({ onLogout }) {
 
   const getAIResponse = async (conversationHistory) => {
     setIsTyping(true);
-    
+      // Create AbortController for timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
     try {
       const response = await fetch(`${API}/chat`, {
         method: 'POST',
@@ -60,25 +63,52 @@ export default function ChatPage({ onLogout }) {
           })),
           model: 'gpt-4o-mini'
         }),
+          signal: controller.signal,
       });
-
-   const data = await response.json(); 
-
-if (!response.ok) {
-  throw new Error(data?.detail || data?.error || data?.message || `Server error: ${response.status}`);
-}
-
       
+      clearTimeout(timeoutId);
+
+      // Read response body only once
+      const responseText = await response.text();
+      let data;
+
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        // Fallback if response is not JSON
+        data = { content: responseText || 'Unexpected response format' };
+      }
+
+      if (!response.ok) {
+        // Handle error responses (4xx/5xx)
+        const errorMessage = data.detail || data.message || data.error || `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
+      }
+
+      // Handle success response
       setMessages(prev => [...prev, {
         id: Date.now(),
         role: "assistant",
-        content: data.content,
+        content: data.content,|| 'No response content',
         timestamp: new Date()
       }]);
       
     } catch (error) {
+      
+      clearTimeout(timeoutId);
+
       console.error('Error getting AI response:', error);
-      toast.error(error.message || 'Failed to get AI response. Please try again.');
+
+      let errorMessage = 'Failed to get AI response. Please try again.';
+
+      if (error.name === 'AbortError') {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage);
+
       
       // Add error message to chat
       setMessages(prev => [...prev, {
