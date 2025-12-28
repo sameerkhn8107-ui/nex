@@ -64,10 +64,10 @@ export default function ChatPage({ onLogout }) {
 
    const data = await response.json(); 
 
-
 if (!response.ok) {
-  throw new Error(data?.detail || "Failed to get AI response");
+  throw new Error(data?.detail || data?.error || data?.message || `Server error: ${response.status}`);
 }
+
       
       setMessages(prev => [...prev, {
         id: Date.now(),
