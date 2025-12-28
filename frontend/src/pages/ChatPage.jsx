@@ -62,12 +62,12 @@ export default function ChatPage({ onLogout }) {
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to get AI response');
-      }
+   const data = await response.json(); 
 
-      const data = await response.json();
+if (!response.ok) {
+  throw new Error(data.detail || 'Failed to get AI response');
+}
+
       
       setMessages(prev => [...prev, {
         id: Date.now(),
