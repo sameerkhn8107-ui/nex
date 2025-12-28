@@ -62,11 +62,19 @@ export default function ChatPage({ onLogout }) {
         }),
       });
 
-   const data = await response.json(); 
+   const text = await response.text();   
+let data;
+
+try {
+  data = JSON.parse(text);
+} catch {
+  throw new Error("Server did not return valid JSON");
+}
 
 if (!response.ok) {
-  throw new Error(data.detail || 'Failed to get AI response');
+  throw new Error(data?.detail || "Failed to get AI response");
 }
+
 
       
       setMessages(prev => [...prev, {
